@@ -30,9 +30,23 @@ const DEFAULT_GARBAGE_PATTERNS = [
 
 export class HierarchicalCategorizerService {
   /**
-   * Loads rules from rules.json (or fallback rules.example.json).
+   * Loads rules from process.env.RULES_JSON, rules.json, or fallback rules.example.json.
    */
   loadRules(customPath?: string): HierarchicalRule[] {
+    // 1. Check process.env.RULES_JSON (GitHub Secret / Cloud environment)
+    if (process.env.RULES_JSON) {
+      try {
+        const json = JSON.parse(process.env.RULES_JSON);
+        const parsed = RuleConfigFileSchema.parse(json);
+        const rules = Array.isArray(parsed) ? parsed : parsed.rules || [];
+        logger.info(`Loaded ${rules.length} rules from RULES_JSON environment secret.`);
+        return rules;
+      } catch (error) {
+        logger.warn(`Failed to parse RULES_JSON environment secret: ${error}`);
+      }
+    }
+
+    // 2. Check local candidate files
     const candidates = customPath
       ? [customPath]
       : [
@@ -47,8 +61,9 @@ export class HierarchicalCategorizerService {
           const raw = fs.readFileSync(p, 'utf-8');
           const json = JSON.parse(raw);
           const parsed = RuleConfigFileSchema.parse(json);
-          logger.info(`Loaded ${parsed.length} categorization rules from ${path.basename(p)}`);
-          return parsed;
+          const rules = Array.isArray(parsed) ? parsed : parsed.rules || [];
+          logger.info(`Loaded ${rules.length} categorization rules from ${path.basename(p)}`);
+          return rules;
         } catch (error) {
           logger.warn(`Failed to parse rules from ${p}: ${error}`);
         }

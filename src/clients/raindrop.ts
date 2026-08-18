@@ -178,6 +178,30 @@ export class RaindropApiClient {
   async getTags(collectionId = 0): Promise<RaindropTagsResponse> {
     return this.request<RaindropTagsResponse>(`/tags/${collectionId}`);
   }
+
+  /**
+   * Globally rename/replace tags across all bookmarks in a collection (0 = all).
+   */
+  async renameTags(
+    collectionId = 0,
+    replaceMap: Record<string, string>
+  ): Promise<{ result: boolean }> {
+    return this.request<{ result: boolean }>(`/tags/${collectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ replace: replaceMap }),
+    });
+  }
+
+  /**
+   * Globally delete/purge tags from all bookmarks in a collection (0 = all).
+   */
+  async deleteTags(collectionId = 0, tags: string[]): Promise<{ result: boolean }> {
+    if (tags.length === 0) return { result: true };
+    return this.request<{ result: boolean }>(`/tags/${collectionId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ tags }),
+    });
+  }
 }
 
 export const raindropClient = new RaindropApiClient();

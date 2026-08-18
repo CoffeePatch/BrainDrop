@@ -130,25 +130,55 @@ program
   });
 
 // ==============================================================================
-// Command: tags (Feature 04 - Tag Normalizer & Taxonomy Cleaner)
+// Command: tags (Feature 04 - Tag Normalizer, Taxonomy & Cleanup Engine)
 // ==============================================================================
-program
+const tagsCommand = program
   .command('tags')
-  .description('Audit tag casing conflicts, merge duplicate tags, and prune empty tags')
+  .description('Audit tag casing conflicts, merge duplicate synonyms, strip banned tags, and prune empty tags')
+  .option('-c, --config <path>', 'Custom path to rules/taxonomy JSON configuration file')
+  .option('-i, --inspect <tag>', 'Inspect all bookmarks carrying a specific tag name')
+  .option('-e, --export [filename]', 'Export complete tag taxonomy inventory to local JSON file')
   .option('-d, --dry-run', 'Preview tag normalization plan without applying mutations', true)
-  .option('-l, --live', 'Merge tag casing conflicts and prune empty tags via Raindrop API', false)
+  .option('-l, --live', 'Execute global tag renames and deletions via Raindrop API', false)
   .action(async (options) => {
+    // 1. Inspect mode
+    if (options.inspect) {
+      ensureCredentials(false);
+      const tagName = options.inspect;
+      logger.header(`🔍 Inspecting Bookmarks with Tag: "${tagName}"`);
+      const bookmarks = await tagNormalizerService.inspectTag(tagName);
+      console.log(`  Found ${pc.bold(String(bookmarks.length))} bookmarks carrying tag "${pc.cyan(tagName)}":\n`);
+      bookmarks.forEach((b, idx) => {
+        console.log(`  ${pc.bold(`#${idx + 1}`)} ${pc.yellow(b.title || 'Untitled')}`);
+        console.log(`     Link: ${b.link}`);
+        console.log(`     Collection: #${b.collection?.$id || -1} | All tags: [${pc.gray((b.tags || []).join(', '))}]\n`);
+      });
+      return;
+    }
+
+    // 2. Export mode
+    if (options.export) {
+      ensureCredentials(false);
+      const filename = typeof options.export === 'string' ? options.export : 'tags-inventory.json';
+      await tagNormalizerService.exportInventory(filename);
+      return;
+    }
+
     const isDryRun = !options.live;
     if (!isDryRun) {
       ensureCredentials(false);
     }
 
     try {
-      const summary = await tagNormalizerService.analyzeTags();
-      tagReporter.printReport(summary, isDryRun);
+      const taxonomy = tagNormalizerService.loadTaxonomyConfig(options.config);
+      const report = await tagNormalizerService.analyzeTaxonomy(taxonomy);
+      tagReporter.printReport(report, isDryRun);
 
-      if (!isDryRun && (summary.caseConflictGroups.length > 0 || summary.emptyTags.length > 0)) {
-        await tagNormalizerService.applyTagNormalization(summary, false);
+      const hasActions =
+        Object.keys(report.globalReplaceMap).length > 0 || report.tagsToDelete.length > 0;
+
+      if (!isDryRun && hasActions) {
+        await tagNormalizerService.applyTagNormalization(report, false);
       }
     } catch (error) {
       logger.error(`Tag normalizer error: ${error}`);

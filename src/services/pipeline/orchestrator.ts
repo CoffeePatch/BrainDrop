@@ -57,7 +57,7 @@ export class PipelineOrchestrator {
     });
 
     // C. Tag Normalizer Planning
-    const tagSummary = await tagNormalizerService.analyzeTags();
+    const tagSummary = await tagNormalizerService.analyzeTaxonomy();
 
     // D. Orphan Cleaner Planning
     const orphanSummary: CleanupSummary = await orphanCleanerService.scanOrphanResources({

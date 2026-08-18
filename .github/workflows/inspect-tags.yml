@@ -1,16 +1,13 @@
-name: 💧 BrainDrop Scheduled Maintenance
+name: 🏷️ Inspect Tags & Taxonomy
 
 on:
-  schedule:
-    # Runs daily at 02:00 UTC (07:30 IST)
-    - cron: '0 2 * * *'
   workflow_dispatch: # Allows manual one-click trigger from GitHub Actions tab
 
 jobs:
-  maintenance:
-    name: Run Automated Maintenance Pipeline
+  inspect:
+    name: Scan & Inspect Raindrop Tag Taxonomy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
       - name: Checkout Repository
@@ -25,12 +22,20 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Execute Unified BrainDrop Pipeline
+      - name: Inspect Tags & Render Step Summary
         env:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           RULES_JSON: ${{ secrets.RULES_JSON }}
-          LOG_LEVEL: info
-        run: npm run pipeline:apply
+        run: |
+          npx tsx src/index.ts tags --dry-run
+          npx tsx src/index.ts tags export
+
+      - name: Upload Tag Inventory Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tags-inventory
+          path: tags-inventory.json
+          retention-days: 14

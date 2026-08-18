@@ -22,10 +22,34 @@ export const HierarchicalRuleSchema = z.object({
   action: z.enum(['organize', 'trash']).optional().default('organize').describe('Action: organize (default) or trash (blacklist)'),
 });
 
-export const RuleConfigFileSchema = z.array(HierarchicalRuleSchema);
+export const TaxonomyConfigSchema = z.object({
+  casing: z.enum(['lowercase', 'kebab-case', 'preserve']).optional().default('lowercase'),
+  acronyms: z
+    .array(z.string())
+    .optional()
+    .default(['AI', 'JAV', 'LLM', 'AWS', 'GCP', 'API', 'UI', 'UX', 'PDF', 'SQL', 'CSS', 'HTML']),
+  aliases: z.record(z.string()).optional().default({}),
+  bannedTags: z.array(z.string()).optional().default([]),
+});
+
+export const RootConfigSchema = z.union([
+  z.array(HierarchicalRuleSchema),
+  z.object({
+    taxonomy: TaxonomyConfigSchema.optional(),
+    rules: z.array(HierarchicalRuleSchema).optional().default([]),
+  }),
+]);
+
+export const RuleConfigFileSchema = RootConfigSchema;
 
 export type SubpathRule = z.infer<typeof SubpathRuleSchema>;
 export type HierarchicalRule = z.infer<typeof HierarchicalRuleSchema>;
+export type TaxonomyConfig = z.infer<typeof TaxonomyConfigSchema>;
+
+export interface ParsedBrainDropConfig {
+  taxonomy: TaxonomyConfig;
+  rules: HierarchicalRule[];
+}
 
 export interface CategorizationMatch {
   bookmarkId: number;

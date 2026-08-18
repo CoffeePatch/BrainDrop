@@ -1,88 +1,109 @@
-[
-  {
-    "name": "GitHub Code & Documentation",
-    "domain": "github.com",
-    "targetCollection": "Development",
-    "tags": ["code"],
-    "subpaths": [
-      {
-        "pattern": "/*/wiki/*",
-        "tags": ["docs", "wiki"],
-        "targetCollection": "Documentation"
-      },
-      {
-        "pattern": "/*/releases/*",
-        "tags": ["release", "changelog"]
-      },
-      {
-        "pattern": "/*/issues/*",
-        "tags": ["issue", "discussion"]
-      }
+{
+  "taxonomy": {
+    "casing": "kebab-case",
+    "acronyms": ["AI", "JAV", "LLM", "AWS", "GCP", "API", "UI", "UX", "PDF", "SQL", "CSS", "HTML"],
+    "aliases": {
+      "reactjs": "react",
+      "react.js": "react",
+      "golang": "go",
+      "k8s": "kubernetes",
+      "ml": "machine-learning",
+      "ts": "typescript"
+    },
+    "bannedTags": [
+      "readlater",
+      "pocket-import",
+      "temp",
+      "untagged",
+      "to-sort"
     ]
   },
-  {
-    "name": "Academic & Research Preprints",
-    "domain": "arxiv.org",
-    "targetCollection": "Research Papers",
-    "tags": ["research", "paper"],
-    "subpaths": [
-      {
-        "pattern": "/pdf/*",
-        "tags": ["pdf"]
-      }
-    ]
-  },
-  {
-    "name": "YouTube Videos & Courses",
-    "domain": "youtube.com",
-    "tags": ["video"],
-    "subpaths": [
-      {
-        "pattern": "/playlist*",
-        "tags": ["course", "playlist"],
-        "targetCollection": "Learning / Courses"
-      },
-      {
-        "pattern": "/watch*",
-        "tags": ["video-lesson"]
-      }
-    ]
-  },
-  {
-    "name": "Technical Subreddits",
-    "domain": "reddit.com",
-    "targetCollection": "Communities",
-    "tags": ["social"],
-    "subpaths": [
-      {
-        "pattern": "/r/programming/*",
-        "tags": ["programming", "tech"]
-      },
-      {
-        "pattern": "/r/typescript/*",
-        "tags": ["typescript", "tech"]
-      }
-    ]
-  },
-  {
-    "name": "General PDF Documents",
-    "fileExtensions": [".pdf"],
-    "targetCollection": "Documents & PDFs",
-    "tags": ["pdf"]
-  },
-  {
-    "name": "Auto-Trash Browser Internal & New Tabs",
-    "domain": "(chrome|edge|brave|about|arc)\\:.*",
-    "action": "trash"
-  },
-  {
-    "name": "Auto-Trash Local Development & Temp Ports",
-    "domain": "(localhost|127\\.0\\.0\\.1|192\\.168\\..*)",
-    "action": "trash"
-  },
-  {
-    "name": "Auto-Trash OAuth & Login Redirects",
-    "regex": "(accounts\\.google\\.com|login\\.microsoftonline\\.com|auth0\\.com)",
-    "action": "trash"
-  }
-]
+  "rules": [
+    {
+      "name": "GitHub Code & Documentation",
+      "domain": "github.com",
+      "targetCollection": "Development",
+      "tags": ["code"],
+      "subpaths": [
+        {
+          "pattern": "/*/wiki/*",
+          "tags": ["docs", "wiki"],
+          "targetCollection": "Documentation"
+        },
+        {
+          "pattern": "/*/releases/*",
+          "tags": ["release", "changelog"]
+        },
+        {
+          "pattern": "/*/issues/*",
+          "tags": ["issue", "discussion"]
+        }
+      ]
+    },
+    {
+      "name": "Academic & Research Preprints",
+      "domain": "arxiv.org",
+      "targetCollection": "Research Papers",
+      "tags": ["research", "paper"],
+      "subpaths": [
+        {
+          "pattern": "/pdf/*",
+          "tags": ["pdf"]
+        }
+      ]
+    },
+    {
+      "name": "YouTube Videos & Courses",
+      "domain": "youtube.com",
+      "tags": ["video"],
+      "subpaths": [
+        {
+          "pattern": "/playlist*",
+          "tags": ["course", "playlist"],
+          "targetCollection": "Learning / Courses"
+        },
+        {
+          "pattern": "/watch*",
+          "tags": ["video-lesson"]
+        }
+      ]
+    },
+    {
+      "name": "Technical Subreddits",
+      "domain": "reddit.com",
+      "targetCollection": "Communities",
+      "tags": ["social"],
+      "subpaths": [
+        {
+          "pattern": "/r/programming/*",
+          "tags": ["programming", "tech"]
+        },
+        {
+          "pattern": "/r/typescript/*",
+          "tags": ["typescript", "tech"]
+        }
+      ]
+    },
+    {
+      "name": "General PDF Documents",
+      "fileExtensions": [".pdf"],
+      "targetCollection": "Documents & PDFs",
+      "tags": ["pdf"]
+    },
+    {
+      "name": "Auto-Trash Browser Internal & New Tabs",
+      "domain": "(chrome|edge|brave|about|arc)\\:.*",
+      "action": "trash"
+    },
+    {
+      "name": "Auto-Trash Local Development & Temp Ports",
+      "domain": "(localhost|127\\.0\\.0\\.1|192\\.168\\..*)",
+      "action": "trash"
+    },
+    {
+      "name": "Auto-Trash OAuth & Login Redirects",
+      "regex": "(accounts\\.google\\.com|login\\.microsoftonline\\.com|auth0\\.com)",
+      "action": "trash"
+    }
+  ]
+}
