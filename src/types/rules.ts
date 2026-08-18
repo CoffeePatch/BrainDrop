@@ -5,6 +5,7 @@ export const SubpathRuleSchema = z.object({
   tags: z.array(z.string()).optional().default([]).describe('Tags to append to parent tags'),
   overrideTags: z.array(z.string()).optional().describe('Tags to replace parent tags entirely'),
   targetCollection: z.string().optional().describe('Override target collection for this subpath'),
+  action: z.enum(['organize', 'trash']).optional().default('organize').describe('Action: organize or trash'),
 });
 
 export const HierarchicalRuleSchema = z.object({
@@ -18,6 +19,7 @@ export const HierarchicalRuleSchema = z.object({
   subpaths: z.array(SubpathRuleSchema).optional().default([]).describe('Nested subpath rules inheriting parent collection & tags'),
   important: z.boolean().optional().describe('Flag as important/starred'),
   priority: z.number().optional().default(0).describe('Priority ordering (higher executes first)'),
+  action: z.enum(['organize', 'trash']).optional().default('organize').describe('Action: organize (default) or trash (blacklist)'),
 });
 
 export const RuleConfigFileSchema = z.array(HierarchicalRuleSchema);
@@ -40,6 +42,8 @@ export interface CategorizationMatch {
   finalTags: string[];
   important?: boolean;
   requiresMutation: boolean;
+  action?: 'organize' | 'trash';
+  isTrashCandidate?: boolean;
 }
 
 export interface CategorizationSummary {

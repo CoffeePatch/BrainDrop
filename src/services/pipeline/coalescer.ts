@@ -86,8 +86,25 @@ export class MutationCoalescer {
       }
     }
 
-    // 3. Ingest Categorization Matches (Coalescing with Keepers)
+    // 3. Ingest Categorization Matches (Coalescing with Keepers or Auto-Trashing)
     for (const match of categorizationMatches) {
+      // If match is an Auto-Trash or Blacklist candidate
+      if (match.action === 'trash' || match.isTrashCandidate) {
+        trashedIdSet.add(match.bookmarkId);
+        const colId = match.currentCollectionId;
+        if (!trashedByCollectionMap.has(colId)) {
+          trashedByCollectionMap.set(colId, []);
+        }
+        trashedByCollectionMap.get(colId)!.push(match.bookmarkId);
+
+        // If an update was previously planned on this bookmark, cancel it!
+        if (bookmarkMap.has(match.bookmarkId)) {
+          bookmarkMap.delete(match.bookmarkId);
+          cancelledUpdatesOnTrashCount++;
+        }
+        continue;
+      }
+
       // RULE 1: Discard any updates on bookmarks scheduled for Trash
       if (trashedIdSet.has(match.bookmarkId)) {
         cancelledUpdatesOnTrashCount++;

@@ -127,4 +127,47 @@ describe('MutationCoalescer Service', () => {
     expect(plan.cancelledUpdatesOnTrashCount).toBe(1);
     expect(plan.totalDuplicatesToTrash).toBe(1);
   });
+
+  it('batches action: "trash" matches from categorizer into batch deletion chunks', () => {
+    const duplicatePlans: DuplicateMutationPlan[] = [];
+    const categorizationMatches: CategorizationMatch[] = [
+      {
+        bookmarkId: 301,
+        originalLink: 'chrome://newtab',
+        title: 'New Tab',
+        matchedRuleName: 'Default Garbage Shield',
+        matchedPattern: 'chrome://',
+        currentCollectionId: -1,
+        isNewCollection: false,
+        existingTags: [],
+        tagsToAdd: [],
+        finalTags: [],
+        requiresMutation: true,
+        action: 'trash',
+        isTrashCandidate: true,
+      },
+      {
+        bookmarkId: 302,
+        originalLink: 'http://localhost:3000',
+        title: 'Localhost',
+        matchedRuleName: 'Default Garbage Shield',
+        matchedPattern: 'localhost',
+        currentCollectionId: -1,
+        isNewCollection: false,
+        existingTags: [],
+        tagsToAdd: [],
+        finalTags: [],
+        requiresMutation: true,
+        action: 'trash',
+        isTrashCandidate: true,
+      },
+    ];
+
+    const plan = coalescer.coalesce(duplicatePlans, categorizationMatches);
+
+    expect(plan.bookmarksToUpdate).toHaveLength(0);
+    expect(plan.totalDuplicatesToTrash).toBe(2);
+    expect(plan.trashedDuplicatesByCollection).toHaveLength(1);
+    expect(plan.trashedDuplicatesByCollection[0]?.duplicateIds).toEqual([301, 302]);
+  });
 });

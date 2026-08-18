@@ -69,5 +69,20 @@
     "fileExtensions": [".pdf"],
     "targetCollection": "Documents & PDFs",
     "tags": ["pdf"]
+  },
+  {
+    "name": "Auto-Trash Browser Internal & New Tabs",
+    "domain": "(chrome|edge|brave|about|arc)\\:.*",
+    "action": "trash"
+  },
+  {
+    "name": "Auto-Trash Local Development & Temp Ports",
+    "domain": "(localhost|127\\.0\\.0\\.1|192\\.168\\..*)",
+    "action": "trash"
+  },
+  {
+    "name": "Auto-Trash OAuth & Login Redirects",
+    "regex": "(accounts\\.google\\.com|login\\.microsoftonline\\.com|auth0\\.com)",
+    "action": "trash"
   }
 ]

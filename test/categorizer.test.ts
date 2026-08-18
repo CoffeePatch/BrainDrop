@@ -164,4 +164,45 @@ describe('HierarchicalCategorizerService', () => {
     expect(match).not.toBeNull();
     expect(match?.targetCollectionName).toBe('Articles');
   });
+
+  it('automatically catches built-in garbage tabs (chrome://, about:blank, localhost)', () => {
+    const chromeTab = createMockBookmark(30, 'chrome://newtab/');
+    const blankTab = createMockBookmark(31, 'about:blank');
+    const localTab = createMockBookmark(32, 'http://localhost:5173/dashboard');
+    const raindropApp = createMockBookmark(33, 'https://app.raindrop.io/my/0');
+
+    const match1 = service.evaluateBookmark(chromeTab, []);
+    const match2 = service.evaluateBookmark(blankTab, []);
+    const match3 = service.evaluateBookmark(localTab, []);
+    const match4 = service.evaluateBookmark(raindropApp, []);
+
+    expect(match1?.action).toBe('trash');
+    expect(match1?.isTrashCandidate).toBe(true);
+
+    expect(match2?.action).toBe('trash');
+    expect(match2?.isTrashCandidate).toBe(true);
+
+    expect(match3?.action).toBe('trash');
+    expect(match3?.isTrashCandidate).toBe(true);
+
+    expect(match4?.action).toBe('trash');
+    expect(match4?.isTrashCandidate).toBe(true);
+  });
+
+  it('respects user defined action: "trash" blacklist rules', () => {
+    const blacklistRules: HierarchicalRule[] = [
+      {
+        name: 'Blacklist Spam & Trackers',
+        domain: '(spamlink|tracking-hub)\\.com',
+        action: 'trash',
+      },
+    ];
+
+    const bookmark = createMockBookmark(40, 'https://spamlink.com/click?id=123');
+    const match = service.evaluateBookmark(bookmark, blacklistRules);
+
+    expect(match).not.toBeNull();
+    expect(match?.action).toBe('trash');
+    expect(match?.isTrashCandidate).toBe(true);
+  });
 });

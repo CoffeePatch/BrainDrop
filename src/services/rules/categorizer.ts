@@ -18,35 +18,39 @@ export interface CategorizeOptions {
   overwriteExistingCollections?: boolean;
 }
 
+const DEFAULT_GARBAGE_PATTERNS = [
+  /^chrome:\/\//i,
+  /^edge:\/\//i,
+  /^brave:\/\//i,
+  /^arc:\/\//i,
+  /^about:(blank|newtab)/i,
+  /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.\d+\.\d+)(:\d+)?/i,
+  /^https?:\/\/app\.raindrop\.io(\/.*)?$/i,
+];
+
 export class HierarchicalCategorizerService {
   /**
-   * Loads and validates user rules from file (rules.json -> rules.example.json -> fallback).
+   * Loads rules from rules.json (or fallback rules.example.json).
    */
   loadRules(customPath?: string): HierarchicalRule[] {
-    const candidatePaths = customPath
+    const candidates = customPath
       ? [customPath]
       : [
           path.resolve(process.cwd(), 'rules.json'),
+          path.resolve(process.cwd(), 'custom-rules.json'),
           path.resolve(process.cwd(), 'rules.example.json'),
         ];
 
-    for (const p of candidatePaths) {
+    for (const p of candidates) {
       if (fs.existsSync(p)) {
         try {
           const raw = fs.readFileSync(p, 'utf-8');
-          const parsed = JSON.parse(raw);
-          const validation = RuleConfigFileSchema.safeParse(parsed);
-
-          if (validation.success) {
-            logger.info(`Loaded ${validation.data.length} rules from ${path.basename(p)}`);
-            return validation.data;
-          } else {
-            logger.warn(
-              `Rule validation warnings in ${path.basename(p)}: ${validation.error.message}`
-            );
-          }
+          const json = JSON.parse(raw);
+          const parsed = RuleConfigFileSchema.parse(json);
+          logger.info(`Loaded ${parsed.length} categorization rules from ${path.basename(p)}`);
+          return parsed;
         } catch (error) {
-          logger.error(`Could not parse rule file ${p}: ${error}`);
+          logger.warn(`Failed to parse rules from ${p}: ${error}`);
         }
       }
     }
@@ -64,6 +68,29 @@ export class HierarchicalCategorizerService {
     overwriteExisting = false
   ): CategorizationMatch | null {
     const rawUrl = bookmark.link || '';
+    const currentCollectionId = bookmark.collection?.$id ?? -1;
+
+    // 0. Built-in Garbage Shield (Auto-Trash browser newtabs, localhost, raindrop app)
+    for (const pattern of DEFAULT_GARBAGE_PATTERNS) {
+      if (pattern.test(rawUrl)) {
+        return {
+          bookmarkId: bookmark._id,
+          originalLink: rawUrl,
+          title: bookmark.title || 'Junk / Internal Tab',
+          matchedRuleName: 'Default Garbage Shield',
+          matchedPattern: pattern.source,
+          currentCollectionId,
+          isNewCollection: false,
+          existingTags: bookmark.tags || [],
+          tagsToAdd: [],
+          finalTags: bookmark.tags || [],
+          requiresMutation: true,
+          action: 'trash',
+          isTrashCandidate: true,
+        };
+      }
+    }
+
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(rawUrl);
@@ -73,7 +100,6 @@ export class HierarchicalCategorizerService {
 
     const hostname = parsedUrl.hostname.toLowerCase();
     const pathname = parsedUrl.pathname.toLowerCase();
-    const currentCollectionId = bookmark.collection?.$id ?? -1;
 
     // Sort rules by priority descending
     const sortedRules = [...rules].sort((a, b) => (b.priority || 0) - (a.priority || 0));
@@ -101,7 +127,7 @@ export class HierarchicalCategorizerService {
       const isMatch = domainMatch || extensionMatch || regexMatch;
       if (!isMatch) continue;
 
-      // 2. Base Rule Properties
+      let effectiveAction = rule.action || 'organize';
       let targetCollection = rule.targetCollection;
       let accumulatedTags = [...(rule.tags || [])];
       let matchedPattern = rule.domain || rule.regex || rule.fileExtensions?.join(',') || 'Base Domain';
@@ -111,6 +137,10 @@ export class HierarchicalCategorizerService {
         for (const sub of rule.subpaths) {
           if (this.matchSubpath(pathname, sub.pattern)) {
             matchedPattern = `${matchedPattern} -> ${sub.pattern}`;
+
+            if (sub.action) {
+              effectiveAction = sub.action;
+            }
 
             // Subpath collection override
             if (sub.targetCollection) {
@@ -126,6 +156,25 @@ export class HierarchicalCategorizerService {
             break; // Stop at first matching subpath
           }
         }
+      }
+
+      // If matched rule specifies action: 'trash', immediately flag as trash candidate
+      if (effectiveAction === 'trash') {
+        return {
+          bookmarkId: bookmark._id,
+          originalLink: rawUrl,
+          title: bookmark.title || 'Untitled',
+          matchedRuleName: rule.name,
+          matchedPattern,
+          currentCollectionId,
+          isNewCollection: false,
+          existingTags: bookmark.tags || [],
+          tagsToAdd: [],
+          finalTags: bookmark.tags || [],
+          requiresMutation: true,
+          action: 'trash',
+          isTrashCandidate: true,
+        };
       }
 
       // 4. Set-Union Deduplication for Tags
