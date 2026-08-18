@@ -356,27 +356,69 @@ export class TagNormalizerService {
   }
 
   /**
-   * Exports full tag inventory to a local private JSON file.
+   * Exports full tag inventory to a clean, human-readable Markdown or JSON file.
    */
-  async exportInventory(outputPath = 'tags-inventory.json'): Promise<string> {
+  async exportInventory(outputPath = 'tags-inventory.md'): Promise<string> {
     const report = await this.analyzeTaxonomy();
     const absPath = path.resolve(process.cwd(), outputPath);
 
     // Sort all tags by bookmark count descending
     const sortedTags = [...(report.allTags || [])].sort((a, b) => b.count - a.count);
 
-    const data = {
-      exportedAt: new Date().toISOString(),
-      totalUniqueTags: report.totalUniqueTags,
-      tags: sortedTags,
-      casingConflicts: report.caseConflictGroups,
-      synonymAliases: report.aliasGroups,
-      bannedTags: report.bannedTagsFound,
-      emptyTags: report.emptyTags,
-      suggestedReplaceMap: report.globalReplaceMap,
-    };
+    if (outputPath.endsWith('.json')) {
+      const data = {
+        exportedAt: new Date().toISOString(),
+        totalUniqueTags: report.totalUniqueTags,
+        tags: sortedTags,
+        casingConflicts: report.caseConflictGroups,
+        synonymAliases: report.aliasGroups,
+        bannedTags: report.bannedTagsFound,
+        emptyTags: report.emptyTags,
+        suggestedReplaceMap: report.globalReplaceMap,
+      };
+      fs.writeFileSync(absPath, JSON.stringify(data, null, 2), 'utf-8');
+    } else {
+      // Clean, Human-Readable Markdown Document
+      let md = `# 🏷️ Raindrop Tag Taxonomy Inventory\n`;
+      md += `*Exported on: ${new Date().toISOString().split('T')[0]}*\n\n`;
+      md += `## 📊 Overview\n`;
+      md += `- **Total Unique Tags:** ${report.totalUniqueTags}\n`;
+      md += `- **Casing Conflict Groups:** ${report.caseConflictGroups.length}\n`;
+      md += `- **Synonym Aliases:** ${report.aliasGroups.length}\n`;
+      md += `- **Banned Tags:** ${report.bannedTagsFound.length}\n`;
+      md += `- **Empty Tags (0 bookmarks):** ${report.emptyTags.length}\n\n`;
+      md += `---\n\n`;
 
-    fs.writeFileSync(absPath, JSON.stringify(data, null, 2), 'utf-8');
+      md += `## 📋 Complete Tag List (${sortedTags.length} tags)\n\n`;
+      md += `| # | Tag Name | Bookmarks Count |\n`;
+      md += `|---|---|---|\n`;
+      sortedTags.forEach((t, idx) => {
+        md += `| ${idx + 1} | \`${t.tag}\` | ${t.count} |\n`;
+      });
+      md += `\n`;
+
+      if (report.caseConflictGroups.length > 0 || report.aliasGroups.length > 0) {
+        md += `## 🔄 Suggested Mergers & Aliases\n\n`;
+        for (const g of report.caseConflictGroups) {
+          md += `- Merge \`${g.sourceTags.join('`, `')}\` ➔ \`${g.canonicalTag}\` (${g.totalUsageCount} bookmarks)\n`;
+        }
+        for (const g of report.aliasGroups) {
+          md += `- Alias \`${g.sourceTags.join('`, `')}\` ➔ \`${g.canonicalTag}\` (${g.totalUsageCount} bookmarks)\n`;
+        }
+        md += `\n`;
+      }
+
+      if (report.bannedTagsFound.length > 0) {
+        md += `## 🚫 Banned Tags to Strip\n\n`;
+        for (const b of report.bannedTagsFound) {
+          md += `- \`${b.tag}\` (found on ${b.count} bookmarks)\n`;
+        }
+        md += `\n`;
+      }
+
+      fs.writeFileSync(absPath, md, 'utf-8');
+    }
+
     logger.success(`Tag inventory exported to ${absPath}`);
     return absPath;
   }

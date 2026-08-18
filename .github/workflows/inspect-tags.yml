@@ -37,5 +37,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tags-inventory
-          path: tags-inventory.json
+          path: tags-inventory.md
           retention-days: 14
