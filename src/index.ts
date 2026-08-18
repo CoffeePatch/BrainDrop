@@ -10,6 +10,8 @@ import { duplicateMutationExecutor } from './services/duplicate/mutation-executo
 import { duplicateReporter } from './services/duplicate/reporter.js';
 import { linkAuditorService } from './services/links/link-auditor.js';
 import { linkReporter } from './services/links/reporter.js';
+import { hierarchicalCategorizerService } from './services/rules/categorizer.js';
+import { categorizerReporter } from './services/rules/categorizer-reporter.js';
 import { ruleEngineService } from './services/rules/rule-engine.js';
 import { ruleReporter } from './services/rules/reporter.js';
 import { incrementalSyncService } from './services/sync/incremental-sync.js';
@@ -173,6 +175,39 @@ program
       }
     } catch (error) {
       logger.error(`Rule engine error: ${error}`);
+      process.exit(1);
+    }
+  });
+
+// ==============================================================================
+// Command: categorize (Feature 06/07 - Hierarchical Syntax & Collection Categorizer)
+// ==============================================================================
+program
+  .command('categorize')
+  .description('Organize bookmarks into collections and add tags via hierarchical rules.json')
+  .option('-c, --config <path>', 'Custom path to rules JSON configuration file')
+  .option('-o, --overwrite', 'Overwrite collection for bookmarks already in curated folders', false)
+  .option('-d, --dry-run', 'Preview categorization plan without applying mutations', true)
+  .option('-l, --live', 'Apply collection moves, create missing folders, and add tags in Raindrop', false)
+  .action(async (options) => {
+    const isDryRun = !options.live;
+    if (!isDryRun) {
+      ensureCredentials(true);
+    }
+
+    try {
+      const summary = await hierarchicalCategorizerService.planCategorization({
+        rulesPath: options.config,
+        overwriteExistingCollections: options.overwrite,
+      });
+
+      categorizerReporter.printReport(summary, isDryRun);
+
+      if (!isDryRun && summary.matches.length > 0) {
+        await hierarchicalCategorizerService.applyCategorization(summary, false);
+      }
+    } catch (error) {
+      logger.error(`Categorization error: ${error}`);
       process.exit(1);
     }
   });

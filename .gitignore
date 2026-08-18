@@ -49,3 +49,8 @@ Thumbs.db
 # Local documentation & planning notes
 docs/
 ROADMAP.md
+
+# Private user rules configuration
+rules.json
+*.rules.json
+custom-rules.json

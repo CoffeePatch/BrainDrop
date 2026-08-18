@@ -2,6 +2,7 @@ import { RAINDROP_API_BASE_URL } from '../config/constants.js';
 import { env } from '../config/env.js';
 import type {
   RaindropBookmark,
+  RaindropCollection,
   RaindropCollectionsResponse,
   RaindropListResponse,
   RaindropSingleResponse,
@@ -139,6 +140,24 @@ export class RaindropApiClient {
    */
   async getChildCollections(): Promise<RaindropCollectionsResponse> {
     return this.request<RaindropCollectionsResponse>('/collections/childrens');
+  }
+
+  /**
+   * Create a new collection.
+   */
+  async createCollection(
+    title: string,
+    parentId?: number
+  ): Promise<{ result: boolean; item: RaindropCollection }> {
+    const body: Record<string, any> = { title };
+    if (parentId && parentId > 0) {
+      body.parent = { $id: parentId };
+    }
+
+    return this.request<{ result: boolean; item: RaindropCollection }>('/collection', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
   }
 
   /**

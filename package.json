@@ -18,6 +18,8 @@
     "tags:apply": "tsx src/index.ts tags --live",
     "rules": "tsx src/index.ts rules --dry-run",
     "rules:apply": "tsx src/index.ts rules --live",
+    "categorize": "tsx src/index.ts categorize --dry-run",
+    "categorize:apply": "tsx src/index.ts categorize --live",
     "links": "tsx src/index.ts links --dry-run",
     "links:apply": "tsx src/index.ts links --live",
     "check": "tsx src/index.ts check",
