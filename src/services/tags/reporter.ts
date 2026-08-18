@@ -41,17 +41,29 @@ export class TagReporter {
       }\n`
     );
 
+    const line = pc.gray('─'.repeat(60));
+
     if (
       summary.caseConflictGroups.length === 0 &&
       aliasGroups.length === 0 &&
       bannedTagsFound.length === 0 &&
       summary.emptyTags.length === 0
     ) {
-      logger.success('All tags are perfectly normalized and adhere to taxonomy! No actions required.');
-      return;
+      logger.success('All tags are perfectly normalized and adhere to taxonomy! No conflict actions required.\n');
     }
 
-    const line = pc.gray('─'.repeat(60));
+    if (report.allTags && report.allTags.length > 0) {
+      console.log(pc.bold(pc.cyan(`Existing Tag Inventory (${report.allTags.length} tags):`)));
+      console.log(line);
+      const sorted = [...report.allTags].sort((a, b) => b.count - a.count);
+      sorted.slice(0, 30).forEach((t: { tag: string; count: number }, idx: number) => {
+        console.log(`  ${pc.gray(`${idx + 1}.`)} ${pc.yellow(t.tag)} ${pc.gray(`(${t.count} bookmarks)`)}`);
+      });
+      if (sorted.length > 30) {
+        console.log(pc.gray(`  ... and ${sorted.length - 30} more tags in inventory.`));
+      }
+      console.log();
+    }
 
     if (summary.caseConflictGroups.length > 0) {
       console.log(pc.bold(pc.cyan('Tag Casing Conflict Groups:')));
@@ -96,7 +108,7 @@ export class TagReporter {
     }
 
     console.log(line);
-    if (isDryRun) {
+    if (isDryRun && (replaceCount > 0 || bannedTagsFound.length > 0 || summary.emptyTags.length > 0)) {
       console.log(
         pc.yellow(
           `\nℹ️  This was a DRY-RUN preview (${replaceCount} renames, ${

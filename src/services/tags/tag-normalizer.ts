@@ -362,9 +362,13 @@ export class TagNormalizerService {
     const report = await this.analyzeTaxonomy();
     const absPath = path.resolve(process.cwd(), outputPath);
 
+    // Sort all tags by bookmark count descending
+    const sortedTags = [...(report.allTags || [])].sort((a, b) => b.count - a.count);
+
     const data = {
       exportedAt: new Date().toISOString(),
       totalUniqueTags: report.totalUniqueTags,
+      tags: sortedTags,
       casingConflicts: report.caseConflictGroups,
       synonymAliases: report.aliasGroups,
       bannedTags: report.bannedTagsFound,
