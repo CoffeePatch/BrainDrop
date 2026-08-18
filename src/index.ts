@@ -133,21 +133,26 @@ program
 // Command: tags (Feature 04 - Tag Normalizer, Taxonomy & Cleanup Engine)
 // ==============================================================================
 const tagsCommand = program
-  .command('tags')
+  .command('tags [action] [target]')
   .description('Audit tag casing conflicts, merge duplicate synonyms, strip banned tags, and prune empty tags')
   .option('-c, --config <path>', 'Custom path to rules/taxonomy JSON configuration file')
   .option('-i, --inspect <tag>', 'Inspect all bookmarks carrying a specific tag name')
   .option('-e, --export [filename]', 'Export complete tag taxonomy inventory to local JSON file')
   .option('-d, --dry-run', 'Preview tag normalization plan without applying mutations', true)
   .option('-l, --live', 'Execute global tag renames and deletions via Raindrop API', false)
-  .action(async (options) => {
+  .action(async (action, target, options) => {
+    // Check if options is in the 2nd or 3rd argument position
+    const opts = typeof action === 'object' ? action : typeof target === 'object' ? target : options || {};
+    const effectiveAction = typeof action === 'string' ? action.toLowerCase() : undefined;
+    const effectiveTarget = typeof target === 'string' ? target : undefined;
+
     // 1. Inspect mode
-    if (options.inspect) {
+    const inspectTag = opts.inspect || (effectiveAction === 'inspect' ? effectiveTarget : undefined);
+    if (inspectTag) {
       ensureCredentials(false);
-      const tagName = options.inspect;
-      logger.header(`🔍 Inspecting Bookmarks with Tag: "${tagName}"`);
-      const bookmarks = await tagNormalizerService.inspectTag(tagName);
-      console.log(`  Found ${pc.bold(String(bookmarks.length))} bookmarks carrying tag "${pc.cyan(tagName)}":\n`);
+      logger.header(`🔍 Inspecting Bookmarks with Tag: "${inspectTag}"`);
+      const bookmarks = await tagNormalizerService.inspectTag(inspectTag);
+      console.log(`  Found ${pc.bold(String(bookmarks.length))} bookmarks carrying tag "${pc.cyan(inspectTag)}":\n`);
       bookmarks.forEach((b, idx) => {
         console.log(`  ${pc.bold(`#${idx + 1}`)} ${pc.yellow(b.title || 'Untitled')}`);
         console.log(`     Link: ${b.link}`);
@@ -157,14 +162,17 @@ const tagsCommand = program
     }
 
     // 2. Export mode
-    if (options.export) {
+    if (opts.export || effectiveAction === 'export') {
       ensureCredentials(false);
-      const filename = typeof options.export === 'string' ? options.export : 'tags-inventory.json';
+      const filename =
+        typeof opts.export === 'string'
+          ? opts.export
+          : effectiveTarget || 'tags-inventory.json';
       await tagNormalizerService.exportInventory(filename);
       return;
     }
 
-    const isDryRun = !options.live;
+    const isDryRun = !opts.live;
     if (!isDryRun) {
       ensureCredentials(false);
     }

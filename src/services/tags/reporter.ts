@@ -154,6 +154,15 @@ export class TagReporter {
         md += `\n`;
       }
 
+      if (report.allTags && report.allTags.length > 0) {
+        md += `### 📋 Complete Tag Inventory (${report.allTags.length} tags)\n\n`;
+        md += `| # | Tag Name | Bookmarks Count |\n|---|---|---|\n`;
+        report.allTags.forEach((t: { tag: string; count: number }, idx: number) => {
+          md += `| ${idx + 1} | \`${t.tag}\` | ${t.count} |\n`;
+        });
+        md += `\n`;
+      }
+
       fs.appendFileSync(summaryFile, md, 'utf-8');
     } catch {
       // Ignored if summary file unwritable

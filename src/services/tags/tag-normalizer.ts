@@ -18,6 +18,7 @@ export interface TagMergeGroup {
 
 export interface TagTaxonomyReport {
   totalUniqueTags: number;
+  allTags: Array<{ tag: string; count: number }>;
   caseConflictGroups: TagMergeGroup[];
   aliasGroups: TagMergeGroup[];
   bannedTagsFound: Array<{ tag: string; count: number }>;
@@ -221,6 +222,7 @@ export class TagNormalizerService {
 
     return {
       totalUniqueTags: tagItems.length,
+      allTags: tagItems.map((t) => ({ tag: t._id, count: t.count })),
       caseConflictGroups,
       aliasGroups,
       bannedTagsFound,
