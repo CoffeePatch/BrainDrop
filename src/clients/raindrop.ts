@@ -161,6 +161,18 @@ export class RaindropApiClient {
   }
 
   /**
+   * Delete a custom collection by ID.
+   */
+  async deleteCollection(id: number): Promise<{ result: boolean }> {
+    if (id <= 0) {
+      throw new Error(`Cannot delete system collection #${id}`);
+    }
+    return this.request<{ result: boolean }>(`/collection/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Get all tags and their frequency counts.
    */
   async getTags(collectionId = 0): Promise<RaindropTagsResponse> {

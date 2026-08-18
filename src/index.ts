@@ -8,6 +8,8 @@ import { duplicateClusterDetector } from './services/duplicate/cluster-detector.
 import { keeperResolver } from './services/duplicate/keeper-resolver.js';
 import { duplicateMutationExecutor } from './services/duplicate/mutation-executor.js';
 import { duplicateReporter } from './services/duplicate/reporter.js';
+import { orphanCleanerService } from './services/cleaner/orphan-cleaner.js';
+import { cleanerReporter } from './services/cleaner/cleaner-reporter.js';
 import { linkAuditorService } from './services/links/link-auditor.js';
 import { linkReporter } from './services/links/reporter.js';
 import { hierarchicalCategorizerService } from './services/rules/categorizer.js';
@@ -238,6 +240,37 @@ program
       }
     } catch (error) {
       logger.error(`Link auditor error: ${error}`);
+      process.exit(1);
+    }
+  });
+
+// ==============================================================================
+// Command: clean (Feature 09 - Orphan Collection & Empty Resource Cleaner)
+// ==============================================================================
+program
+  .command('clean')
+  .description('Prune abandoned empty collections and zero-usage tags')
+  .option('-p, --protected <titles...>', 'List of collection names to protect from pruning')
+  .option('-d, --dry-run', 'Preview empty collections and dead tags without deleting', true)
+  .option('-l, --live', 'Delete empty collections and prune zero-usage tags in Raindrop', false)
+  .action(async (options) => {
+    const isDryRun = !options.live;
+    if (!isDryRun) {
+      ensureCredentials(false);
+    }
+
+    try {
+      const summary = await orphanCleanerService.scanOrphanResources({
+        protectedCollections: options.protected,
+      });
+
+      cleanerReporter.printReport(summary, isDryRun);
+
+      if (!isDryRun && (summary.emptyCollections.length > 0 || summary.emptyTags.length > 0)) {
+        await orphanCleanerService.applyCleanup(summary, false);
+      }
+    } catch (error) {
+      logger.error(`Cleaner error: ${error}`);
       process.exit(1);
     }
   });

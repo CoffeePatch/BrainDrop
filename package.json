@@ -22,6 +22,8 @@
     "categorize:apply": "tsx src/index.ts categorize --live",
     "links": "tsx src/index.ts links --dry-run",
     "links:apply": "tsx src/index.ts links --live",
+    "clean": "tsx src/index.ts clean --dry-run",
+    "clean:apply": "tsx src/index.ts clean --live",
     "check": "tsx src/index.ts check",
     "status": "tsx src/index.ts status",
     "test": "vitest run",
