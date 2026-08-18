@@ -10,6 +10,8 @@ import { duplicateMutationExecutor } from './services/duplicate/mutation-executo
 import { duplicateReporter } from './services/duplicate/reporter.js';
 import { orphanCleanerService } from './services/cleaner/orphan-cleaner.js';
 import { cleanerReporter } from './services/cleaner/cleaner-reporter.js';
+import { pipelineOrchestrator } from './services/pipeline/orchestrator.js';
+import { pipelineReporter } from './services/pipeline/pipeline-reporter.js';
 import { linkAuditorService } from './services/links/link-auditor.js';
 import { linkReporter } from './services/links/reporter.js';
 import { hierarchicalCategorizerService } from './services/rules/categorizer.js';
@@ -271,6 +273,41 @@ program
       }
     } catch (error) {
       logger.error(`Cleaner error: ${error}`);
+      process.exit(1);
+    }
+  });
+
+// ==============================================================================
+// Command: pipeline / run (Unified Coalesced Maintenance Pipeline)
+// ==============================================================================
+program
+  .command('pipeline')
+  .alias('run')
+  .description('Run full maintenance: Sync -> Deduplicate -> Categorize -> Tags -> Clean with coalesced mutations')
+  .option('-c, --config <path>', 'Custom path to rules JSON configuration file')
+  .option('-p, --protected <titles...>', 'List of collection names to protect from pruning')
+  .option('-o, --overwrite', 'Overwrite collection for bookmarks already in curated folders', false)
+  .option('--skip-sync', 'Skip incremental delta sync pull step', false)
+  .option('-d, --dry-run', 'Preview entire pipeline execution plan without applying mutations', true)
+  .option('-l, --live', 'Execute all coalesced updates, trashing, and cleaning in Raindrop', false)
+  .action(async (options) => {
+    const isDryRun = !options.live;
+    if (!isDryRun) {
+      ensureCredentials(true);
+    }
+
+    try {
+      const report = await pipelineOrchestrator.run({
+        dryRun: isDryRun,
+        skipSync: options.skipSync,
+        rulesPath: options.config,
+        protectedCollections: options.protected,
+        overwriteExistingCollections: options.overwrite,
+      });
+
+      pipelineReporter.printReport(report, isDryRun);
+    } catch (error) {
+      logger.error(`Pipeline execution failed: ${error}`);
       process.exit(1);
     }
   });
