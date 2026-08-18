@@ -79,10 +79,10 @@ export class HierarchicalCategorizerService {
     const sortedRules = [...rules].sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
     for (const rule of sortedRules) {
-      // 1. Check Matching Criteria
+      // 1. Check Matching Criteria (supports exact, wildcard, and regex domains)
       const domainMatch =
-        (rule.domain && (hostname === rule.domain.toLowerCase() || hostname.endsWith(`.${rule.domain.toLowerCase()}`))) ||
-        (rule.domains && rule.domains.some((d) => hostname === d.toLowerCase() || hostname.endsWith(`.${d.toLowerCase()}`)));
+        (rule.domain && this.matchDomain(hostname, rule.domain)) ||
+        (rule.domains && rule.domains.some((d) => this.matchDomain(hostname, d)));
 
       const extensionMatch =
         rule.fileExtensions &&
@@ -214,6 +214,35 @@ export class HierarchicalCategorizerService {
     } catch {
       return pathname.startsWith(cleanPattern);
     }
+  }
+
+  /**
+   * Helper to match hostname against exact domains, subdomains, wildcards (*.medium.com), and regex patterns.
+   */
+  private matchDomain(hostname: string, domainPattern: string): boolean {
+    const clean = domainPattern.trim().toLowerCase();
+
+    // 1. Exact match or standard subdomain (e.g. "github.com" matches "github.com" and "api.github.com")
+    if (hostname === clean || hostname.endsWith(`.${clean}`)) {
+      return true;
+    }
+
+    // 2. Wildcard glob (e.g. "*.medium.com" or "*.gov.*")
+    if (clean.includes('*')) {
+      const globRegexStr = '^' + clean.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$';
+      try {
+        const regex = new RegExp(globRegexStr, 'i');
+        if (regex.test(hostname)) return true;
+      } catch {}
+    }
+
+    // 3. Custom Regex pattern (e.g. "(javtrailers|javlibrary)\\.com" or "(youtube|youtu)\\.(com|be)")
+    try {
+      const regex = new RegExp(clean, 'i');
+      if (regex.test(hostname)) return true;
+    } catch {}
+
+    return false;
   }
 
   /**

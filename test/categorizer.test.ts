@@ -124,4 +124,44 @@ describe('HierarchicalCategorizerService', () => {
     expect(match?.tagsToAdd).toEqual(['type:search']); // Does not duplicate Type:JAV
     expect(match?.finalTags).toEqual(['Type:JAV', 'type:search']);
   });
+
+  it('supports regex patterns directly inside "domain"', () => {
+    const regexDomainRules: HierarchicalRule[] = [
+      {
+        name: 'Multi-Domain Regex Match',
+        domain: '(javtrailers|javlibrary)\\.com',
+        targetCollection: 'JAV Archive',
+        tags: ['type:jav'],
+      },
+    ];
+
+    const bookmark1 = createMockBookmark(10, 'https://javlibrary.com/en/');
+    const bookmark2 = createMockBookmark(11, 'https://javtrailers.com/video/123');
+
+    const match1 = service.evaluateBookmark(bookmark1, regexDomainRules);
+    const match2 = service.evaluateBookmark(bookmark2, regexDomainRules);
+
+    expect(match1).not.toBeNull();
+    expect(match1?.targetCollectionName).toBe('JAV Archive');
+
+    expect(match2).not.toBeNull();
+    expect(match2?.targetCollectionName).toBe('JAV Archive');
+  });
+
+  it('supports wildcard glob patterns in "domain"', () => {
+    const wildcardRules: HierarchicalRule[] = [
+      {
+        name: 'Wildcard Subdomain',
+        domain: '*.medium.com',
+        targetCollection: 'Articles',
+        tags: ['article'],
+      },
+    ];
+
+    const bookmark = createMockBookmark(20, 'https://betterprogramming.medium.com/clean-code');
+    const match = service.evaluateBookmark(bookmark, wildcardRules);
+
+    expect(match).not.toBeNull();
+    expect(match?.targetCollectionName).toBe('Articles');
+  });
 });
