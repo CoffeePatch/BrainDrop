@@ -30,6 +30,10 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           RULES_JSON: ${{ secrets.RULES_JSON }}
         run: |
+          if [ -z "$RAINDROP_TOKEN" ]; then
+            echo "::warning title=Missing Secrets::RAINDROP_TOKEN is not configured in repository secrets. Please add it under Settings -> Secrets and variables -> Actions."
+            exit 0
+          fi
           npx tsx src/index.ts tags --dry-run
           npx tsx src/index.ts tags --export
 

@@ -33,4 +33,9 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           RULES_JSON: ${{ secrets.RULES_JSON }}
           LOG_LEVEL: info
-        run: npm run pipeline:apply
+        run: |
+          if [ -z "$RAINDROP_TOKEN" ]; then
+            echo "::warning title=Missing Secrets::RAINDROP_TOKEN is not configured in repository secrets. Please add it under Settings -> Secrets and variables -> Actions."
+            exit 0
+          fi
+          npm run pipeline:apply
