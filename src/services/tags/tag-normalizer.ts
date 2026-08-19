@@ -258,15 +258,30 @@ export class TagNormalizerService {
       return;
     }
 
-    // 1. Single API Call: Global Tag Replace in Raindrop (PUT /tags/0)
+    // 1. Execute Global Tag Replacements via Raindrop PUT /tags/0
     if (replaceCount > 0) {
-      logger.info(`Applying ${replaceCount} global tag renames via Raindrop PUT /tags/0...`);
-      try {
-        await raindropClient.renameTags(0, report.globalReplaceMap);
-        logger.success(`Successfully renamed ${replaceCount} tags across all bookmarks.`);
-      } catch (error) {
-        logger.error(`Failed to execute global tag rename: ${error}`);
+      // Group old tags by replacement target name
+      const targetMap = new Map<string, string[]>();
+      for (const [oldTag, newTag] of Object.entries(report.globalReplaceMap)) {
+        if (!targetMap.has(newTag)) {
+          targetMap.set(newTag, []);
+        }
+        targetMap.get(newTag)!.push(oldTag);
       }
+
+      logger.info(
+        `Applying ${replaceCount} tag renames merged into ${targetMap.size} target groups via Raindrop PUT /tags/0...`
+      );
+
+      for (const [newTag, oldTags] of targetMap.entries()) {
+        try {
+          await raindropClient.renameTags(0, oldTags, newTag);
+          logger.info(`  ✓ Merged [${oldTags.join(', ')}] ➔ "${newTag}"`);
+        } catch (error) {
+          logger.error(`  ✗ Failed to rename [${oldTags.join(', ')}] to "${newTag}": ${error}`);
+        }
+      }
+      logger.success(`Completed tag renames in Raindrop.`);
     }
 
     // 2. Single API Call: Global Tag Deletion in Raindrop (DELETE /tags/0)

@@ -172,13 +172,11 @@ const tagsCommand = program
       return;
     }
 
+    ensureCredentials(false);
     const isDryRun = !opts.live;
-    if (!isDryRun) {
-      ensureCredentials(false);
-    }
 
     try {
-      const taxonomy = tagNormalizerService.loadTaxonomyConfig(options.config);
+      const taxonomy = tagNormalizerService.loadTaxonomyConfig(opts.config);
       const report = await tagNormalizerService.analyzeTaxonomy(taxonomy);
       tagReporter.printReport(report, isDryRun);
 

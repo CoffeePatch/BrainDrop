@@ -180,15 +180,17 @@ export class RaindropApiClient {
   }
 
   /**
-   * Globally rename/replace tags across all bookmarks in a collection (0 = all).
+   * Globally rename/replace a list of tags to a new name across all bookmarks in a collection (0 = all).
    */
   async renameTags(
     collectionId = 0,
-    replaceMap: Record<string, string>
+    tags: string[],
+    replaceWith: string
   ): Promise<{ result: boolean }> {
+    if (tags.length === 0) return { result: true };
     return this.request<{ result: boolean }>(`/tags/${collectionId}`, {
       method: 'PUT',
-      body: JSON.stringify({ replace: replaceMap }),
+      body: JSON.stringify({ tags, replace: replaceWith }),
     });
   }
 
