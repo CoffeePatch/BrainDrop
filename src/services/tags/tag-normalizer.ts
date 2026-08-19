@@ -48,7 +48,13 @@ export class TagNormalizerService {
       }
     }
 
-    // 2. Check local files
+    // 2. In CI/GitHub Actions, do NOT fall back to example template if RULES_JSON is missing
+    const isCI = Boolean(process.env.GITHUB_ACTIONS || process.env.CI);
+    if (isCI && !customPath) {
+      return { casing: 'lowercase', acronyms: [], aliases: {}, bannedTags: [] };
+    }
+
+    // 3. Check local files
     const candidates = customPath
       ? [customPath]
       : [

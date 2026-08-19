@@ -46,7 +46,16 @@ export class HierarchicalCategorizerService {
       }
     }
 
-    // 2. Check local candidate files
+    // 2. In CI/GitHub Actions, do NOT fall back to example template if RULES_JSON is missing
+    const isCI = Boolean(process.env.GITHUB_ACTIONS || process.env.CI);
+    if (isCI && !customPath) {
+      logger.info(
+        'ℹ️  No RULES_JSON secret provided in GitHub Actions. Running with built-in garbage shield & deduplication.'
+      );
+      return [];
+    }
+
+    // 3. Check local candidate files
     const candidates = customPath
       ? [customPath]
       : [
