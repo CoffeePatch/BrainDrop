@@ -56,10 +56,7 @@ export class PipelineOrchestrator {
       overwriteExistingCollections: options.overwriteExistingCollections,
     });
 
-    // C. Tag Normalizer Planning
-    const tagSummary = await tagNormalizerService.analyzeTaxonomy();
-
-    // D. Orphan Cleaner Planning
+    // C. Orphan Cleaner Planning
     const orphanSummary: CleanupSummary = await orphanCleanerService.scanOrphanResources({
       protectedCollections: options.protectedCollections,
     });
@@ -68,8 +65,7 @@ export class PipelineOrchestrator {
     logger.info('Step 3/5: Coalescing multi-engine updates and discarding trashed mutations...');
     const coalescedPlan: CoalescedMutationPlan = mutationCoalescer.coalesce(
       duplicatePlans,
-      categorizationSummary.matches,
-      tagSummary
+      categorizationSummary.matches
     );
 
     // 4. Step 4: Dispatch Coalesced Mutations to Raindrop & Reconcile Firestore
